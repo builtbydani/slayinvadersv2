@@ -138,5 +138,27 @@
       state.speedScale = 1;
       calcBounds();
     }
+
+    function calcBounds() {
+      if (invaders.list.length === 0) {
+        invaders.bounds = {
+          left: 0,
+          right: 0,
+          lowest: 0
+        };
+
+        return;
+      }
+
+      const xs = invaders.list.map(e => e.x);
+      const ys = invaders.list.map(e => e.y);
+
+      invaders.bounds.left   = Math.min(...xs);
+      invaders.bounds.right  = Math.max(...xs) + 36;
+      invaders.bounds.lowest = Math.max(...ys) + 24;
+    }
+
+    //-------- Input ---------
+
   }
 })
