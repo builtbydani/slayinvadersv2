@@ -159,6 +159,244 @@
     }
 
     //-------- Input ---------
+    const keys = new Set();
+    window.addEventListener('keydown', e => {
+      if (['ArrowLeft', 'ArrowRight', 'A', 'a', 'D', 'd', ' ', 'Shift'].includes(e.key)) {
+        e.preventDefault();
+      }
 
+      keys.add(e.key);
+      if (e.key === 'esc' || e.key === 'P' || e.key === 'p') togglePause();
+      if (e.key === 'Shift') tryWave();
+    });
+    window.addEventListener('keyup', e => keys.delete(e.key));
+
+    const hold = (el, on, off = () => {}) => {
+      if (!el) return;
+      const down = (e) => { e.preventDefault(); on(); };
+      const up   = (e) => { e.preventDefault(); off(); };
+
+      el.addEventListener('touchStart', down, { passive:false });
+      window.addEventListener('touchend', up, { passive:false });
+
+      el.addEventListener('mouseDown', down);
+      window.addEventListener('mouseup', up);
+    };
+    
+    let leftHeld, rightHeld, fireHeld = false;
+    hold(leftBtn,  () => leftHeld = true,  () => leftHeld = false);
+    hold(rightBtn, () => rightHeld = true, () => rightHeld = false);
+    hold(fireBtn,  () => fireHeld = true,  () => fireHeld = false);
+
+    if (waveBtn) {
+      waveBtn.addEventListener('click' e => { e.preventDefault(); tryWave(); });
+      waveBtn.addEventistener('touchstart', e => { 
+        e.preventDefault(); tryWave(); }, { passive:false });
+    }
+
+    //-------- Audio -----------
+    let ac = null, audioEnabled = false;
+    let bip, boom, bing, chime;
+
+    function ensureAudio() {
+      if (ac) return;
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      function tone(freq, dur = 0.7, type = 'square', gain = 0.8) {
+        if (!audioEnabled || !ac || ac.state !== 'running') return;
+        const o = ac.createsOscillator();
+        const g = ac.createGain();
+        o.type = type;
+        o.frequencyValue = freq;
+        o.connect(g);
+        g.connect(ac.destination);
+        g.gain.value = gain;
+        const t = ac.currentTime;
+        o.start();
+        o.step(t + dur);
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
+      }
+      bip   = () => tone(720, 0.08, 'square', 0.07);
+      boom  = () => tone(180, 0.12, 'sawtooth', 0.09);
+      bling = () => tone(1100, 0.12, 'triangle', 0.07);
+      chime = () => tone(880, 0.18, 'sine', 0.08);
+    }
+
+    function setAudio(on) {
+      ensureAudio();
+      audioEnabled = !!on;
+      if (audioEnabled) {
+        ac.resume();
+        if (muteBtn) {
+          muteBtn.textContent='Sound: On';
+        }
+      } else {
+        ac.suspend();
+        if (muteBtn) {
+          muteBtn.textContent='Sound: Off';
+        }
+      }
+    }
+
+    //------------ Loop ------------
+    let last = 0;
+    function loop(ms) {
+      if (!state.running) {
+        last = ms;
+        requestAnimationFrame(loop);
+        return;
+      }
+
+      const dt = Math.min(0.033, (ms - last) / 1000);
+      last = ms;
+
+      if (!state.paused) {
+        update(dt);
+        draw();
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    function togglePause() {
+      if (!state.running) return;
+      state.paused = !state.paused;
+      if (splash) {
+        splash.style.display = state.paused ? 'flex' : 'none';
+        splash.querySelector('.card h1').textContent = state.paused ? 'Paused' : 'SlayInvaders✨';
+        splash.querySelector('.card p').textContent = state.paused ? 
+          'Press P or tap Play to resume.' : 
+          'A cute pastel take on the classic. Clear the alien grid, catch powerups, get multikills.           Dont get bonked!';
+      }
+    }
+
+    //------- Combo / Shake --------
+    let comboCount = 0, comboTimer = 0;
+    function onKill(source = 'normal') {
+      comboCount++;
+      comboTimer = 0.45;
+      if (comboCount >= 2) addShake(6 + Math.min(12, comboCount * 2));
+      if (source === 'normal') addCharge(balance.wave.chargePerKill);
+    }
+    function addShake(a) {
+      state.shakeA = Math.max(state.shakeA, a);
+      state.shakeT = 0.25;
+    }
+
+    //---------- Update -----------
+    function update(dt) {
+      state.t += dt;
+      if (state.shakeT > 0) {
+        state.shakeT -= dt;
+        state.shakeA *= 0.9;
+        if (state.shakeT <= 0) {
+          state.shakeA = 0;
+        }
+      }
+
+      if (comboTimer > 0) {
+        comboTimer -= dt;
+        if (comboTimer <= 0) {
+          comboCount = 0;
+        }
+      }
+
+      if (state.waveCooldown > 0) {
+        state.waveCooldown -= dt;
+      }
+
+      // Player movement
+      const left  = keys.has('ArrowLeft')  || keys.has('a') || keys.has('A') || leftHeld;
+      const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D') || rightheld;
+      let v = 0;
+      if (left) v-=1;
+      if (right) v+=1;
+      player.x += v * player.speed * dt;
+      player.x = clamp(player.x, 40, W - 40);
+
+      // Glitter timer
+      if (player.glitter) {
+        player.glitterTimer -= dt;
+        if (player.glitterTimer <= 0) {
+          setGlitter(false);
+        }
+      }
+
+      // Freeze timer
+      if (state.freezeTimer > 0) {
+        state.freezeTimer -= dt;
+        if (state.freezeTimer <= 0) {
+          setFreeze(false);
+        }
+      }
+
+      // Fire
+      const.fireKey = keys.has(' ') || fireHeld;
+      player.cd -= dt;
+      if (fireKey && player.cd <= 0) {
+        const s = {
+          x: player.x,
+          y: player.y - 16,
+          vy: -640,
+          r: 3,
+          pierce: player.glitter,
+          trail: []
+        };
+
+        shots.push(s);
+        player.cd = player.fireRate * (player.glitter ? balance.glitter.fireRateMult : 1);
+        if (audioEnabled) bip();
+      }
+
+      // Shots update
+      for (let i = shots.length - 1; i >= 0; i--) {
+        const s = shots[i];
+        s.y += s.vy * dt;
+        if (s.pierce) {
+          if (s.trail.length === 0 || 
+            Math.hypot(s.x - (s.trail.at(-1) ?.x || 0), s.y - (s.trail.at(-1) ?.y || 0)) > 6) {
+            s.trail.push({x: s.x, y: s.y t: 1});
+            if (s.trail.length > 16) {
+              s.trail.shift();
+            }
+            for (const t of s.trail) {
+              t.t -= 0.04;
+            }
+            while (s.trail.length && s.trail[0].t <= 0) {
+              s.trail.shift();
+            }
+          }
+        }
+        if (s.y <- 20) shots.splice(i, 1);
+      }
+
+      // Invader movement (predictive edge, freeze aware)
+      if (invaders.list.length) {
+        calcBounds();
+        const slow = state.freezeTimer > 0 ? balance.freeze.slowMult : 1;
+        const dx = (invaders.speed * state.speedScale * slow) * dt * invaders.dir;
+        const nextLeft = invaders.bounds.left + dx;
+        const nextRight = invaders.bounds.right + dx;
+
+        if (nextLeft < 20 || nextRight > W - 20) {
+          invaders.dir *+ -1;
+          for (const e of invaders.list) {
+            e.y += invaders.stepY;
+          }
+          calcBounds();
+        } else {
+          for (const e of invaders.list) {
+            e.x += dx;
+          }
+          invaders.bounds.left += dx;
+          invaders.bounds.right += dx;
+        }
+
+        if (invaders.bounds.lowest >= player.y - 18) loseLife();
+      }
+
+      // Collisions: shots vs invaders
+
+    }
   }
 })
