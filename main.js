@@ -593,6 +593,61 @@
       }
     }
 
-    //---------TODO: DRAW, Bootstrap----------
+    //--------- Draw ----------
+    function draw() {
+      let ox = 0, oy = 0;
+      if (state.shakeA > 0) {
+        ox = (Math.random() * 2 - 1) * state.shakeA;
+        oy = (Math.random() * 2 - 1) * state.shakeA;
+      }
+
+      ctx.save();
+      ctx.translate(ox, oy);
+      ctx.clearRect(-ox, -oy, W, H);
+      drawBackdrop();
+      drawShip(player.x, player.y);
+
+      // bullets
+      for (const s of shots) {
+        if (s.pierce && s.trail?.length) {
+          for (let i = 0; i < s.trail.length; i++) {
+            const t = s.trail[i];
+            const a = Math.max(0, t.t);
+            ctx.fillStyle = `hsla(${(state.t * 180 + i * 20) % 360} 90% 70% / ${a*0.6})`;
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, 2 + i * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+          }tx.
+        }
+        ctx.fillStyle= '#fff';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // invaders
+      for (const e of invaders.list) drawAlien(e);
+
+      // drops
+      for (const d of drops) drawDrops(d);
+
+      // waves
+      for (const wv of waves) drawWave(wv);
+
+      // particles
+      for (const p of pfx) {
+        ctx.fillStyle = `hsla(${p.h} 90% 70% / ${p.a})`;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      }
+
+      if (state.freezeTimer > 0) {
+        ctx.fillStyle = 'rgba(120, 180, 255, 0.15)';
+        ctx.fillRect(-ox, -oy, W, H);
+      }
+
+      ctx.restore();
+    }
+
+    // TODO Draw helpers, bootstrap
   }
 })
