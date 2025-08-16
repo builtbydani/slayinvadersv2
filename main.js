@@ -396,7 +396,203 @@
       }
 
       // Collisions: shots vs invaders
+      for (let i = shots.length - 1; i >= 0; i--) {
+        const s = shots[i];
+        for (let j = invaders.list.length - 1; j >= 0; j--) {
+          const e = invaders.list[j];
+          if (Math.abs(s.x - (e.x + 18)) < 18 && Math.abs(s.y - (e.y + 12)) < 12) {
+            e.hp--;
+            spawnPuff(e.x + 18, e.y + 12, e.hue);
+            if (audioEnabled) boom();
+            if (e.hp <= 0) {
+              invaders.list.splice(j, 1);
+              addScore(e.worth);
+              onKill('normal');
+              const r = Math.random();
+              if (r < 0.10) {
+                drops.push({
+                  x: e.x + 18,
+                  y: e.y + 12,
+                  vy: 80,
+                  type: 'freeze'
+                });
+                else if (r < 0.25) {
+                  drops.push({
+                    x: e.x + 18,
+                    y: e.y + 12,
+                    vy: 80,
+                    type: 'glitter'
+                  });
+                }  
+              }
+            }
+            if (!s.pierce) shots.splice(i, 1);
+            break;
+          }
+        }
+      }
 
+      // Powerup drops
+      for (let i = drops.length - 1; i > 0; i--) {
+        const d = drops[i];
+        d.y += d.vy * dt;
+        d.vy = Math.min(d.vy + 160 * dt, 260);
+
+        if (Math.abs(d.x - player.x) < (player.w / 2) && Math.abs(d.y - player.y) < 18) {
+          if (d.type === 'glitter') setGlitter(true);
+          if (d.type === 'freeze') setFreeze(true);
+          drops.splice(i, 1);
+          continue;
+        }
+        if (d.y > H + 30) drops.splice(i, 1);
+      }
+
+      // Rainbow waves
+      for (let i = waves.length - 1; i > 0; i--) {
+        const wv = waves[i];
+        wv.y += wv.vy * dt;
+        for (let j = invaders.list.length - 1; j >= 0; j--) {
+          const e = invaders.list[j];
+          if (Math.abs((e.y + 12) - wv.y) < balance.wave.lineTolerance) {
+            spawnPuff(e.x + 18, e.y + 12, e.hue);
+            addScore(e.worth);
+            onKill('wave');
+            invaders.list.splice(j, 1);
+            wv.kills = (wv.kills || 0) + 1;
+            if (wv.kills >= balance.wave.maxKillsPerWave) {
+              break;
+            }
+          }
+        }
+        if (wv.y < -20 || (wv.kills || 0) >= balance.wave.maxKillsPerWave) {
+          waves.splice(i, 1);
+        }
+      }
+
+      // Particles
+      for (let i = pfx.length - 1; i >= 0; i--) {
+        const p = pfx[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 20 * dt;
+        p.a = p.fade * dt;
+        if (p.a <= 0) {
+          pfx.splice(i, 1);
+        }
+      }
+
+      // Next level
+      if (invaders.list.length === 0) {
+        state.level++;
+        elLevel.textContent = 'LV' + state.level;
+        state.speedScale = 1;
+        spawnWave(state.level);
+      }
+
+      // Dynamic difficulty: speed up as lowest row drops
+      const baseline = 130 + state.level * 6;
+      const low = invaders.bounds.lowest || baseline;
+      state.speedScale = lerp(state.speedScale, 1 + clamp((low-baseline) / 320, 0, 1.2), 0.02);
     }
+
+    //--------- Effects of States ----------
+    function setGlitter(on) {
+      player.glitter = on;
+      player.glitterTimer = on ? balance.glitter.duration : 0;
+      elStatus.textContent = on ? 'GLITTER ✨' : (state.freezeTimer > 0 ? 'FREEZE ❄️' : '');
+      elStatus.style.background = on ? 
+        'linear-gradient(90deg, #ffb3d6, #c9b7ff, #aee6ff)' : 
+        (state.freezeTimer > 0 ? 
+        'linear-gradient(90deg, #88c6ff, #c9e6ff)' :
+        'rgba(255, 255, 255, 0.08)');
+      if (on && audioEnabled) bling();
+    }
+
+    function setFreeze(on) {
+      state.freezeTimer = on ? balance.freeze.duration : 0;
+      if (on) {
+        elStatus.textContent = 'FREEZE ❄️';
+        elStatus.style.background = 'linear-gradient(90deg, #88c6ff, #c9e6ff)';
+        if (audioEnabled) chime();
+      } else if (!player.glitter) {
+        elStatus.textContent = '';
+        elStatus.style.background = 'rgba(255, 255, 255, 0.08)'
+      }
+    }
+
+    function addCharge(amount) {
+      player.waveCharge = clamp(player.waveCharge + amount, 0, 1);
+      const pct = Math.round(player.waveCharge * 100);
+      if (elCharge && elCharge.firstChild) { 
+        elCharge.firstChild.nodeValue = `WAVE ${pct}%`; 
+      }
+      if (elChargeFill) {
+        elChargeFill.style.width = `${pct}%`;
+      } 
+    }
+
+    function tryWave() {
+      if (player.waveCharge < 1 || state.waveCooldown > 0) return;
+      waves.push({ 
+        y: player.y - 22,
+        vy: -900,
+        kills: 0,
+      });
+      addShake(10);
+      if (audioEnabled) bling();
+      player.waveCharge = 0;
+      addCharge(0);
+      state.waveCooldown = balance.waveCooldown;
+    }
+
+    function addScore(n) {
+      state.score += n;
+      elScore.textContent = 'SCORE' + String(state.score).padStart(6, '0');
+    }
+
+    function loseLife() {
+      state.lives--;
+      renderLives();
+      if (state.lives <= 0) {
+        gameOver();
+        return;
+      }
+
+      player.x = W / 2;
+      player.cd = 0;
+      invaders.dir = 1;
+      invaders.stepY = 26;
+      setGlitter(false);
+      setFreeze(false);
+      plaer.waveCharge = 0;
+      addCharge(0);
+    }
+
+    function renderLives() {
+      elLives.textContent = '❤'.repeat(state.lives);
+    }
+
+    function gameOver() {
+      state.running = false;
+      if (splash) {
+        spalsh.style.display = 'flex';
+        splash.querySelector('h1').textContent = 'Game Over';
+        splash.querySelector('p').textContent = `Final score: ${state.score}. Press Play to retry`
+      }
+    }
+
+    function spawnPuff(x, y, hue) {
+      for (let i = 0; i < 8; i++) {
+        pfx.push({
+          x, y, vx: rand(-60, 60),
+          vy: rand(-120, -10), 
+          a: 1,
+          fade: rand(1.2, 1.8),
+          h: hue
+        });
+      }
+    }
+
+    //---------TODO: DRAW, Bootstrap----------
   }
 })
