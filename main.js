@@ -175,12 +175,12 @@
 
     if (playBtn) {
       playBtn.addEventListener('click', start);
-      playBtn.addEventListener('touchStart', (e) => { e.preventDefault(); start(); }, { passive:false });
+      playBtn.addEventListener('touchstart', (e) => { e.preventDefault(); start(); }, { passive:false });
     }
 
     if (muteBtn) {
       muteBtn.addEventListener('click', start);
-      muteBtn.addEventListener('touchStart', (e) => { e.preventDefault(); setAudio(!audioEnabled); }, { passive:false });
+      muteBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setAudio(!audioEnabled); }, { passive:false });
     }
 
     //-------- Audio -----------
