@@ -617,7 +617,7 @@
             ctx.beginPath();
             ctx.arc(t.x, t.y, 2 + i * 0.08, 0, Math.PI * 2);
             ctx.fill();
-          }tx.
+          }
         }
         ctx.fillStyle= '#fff';
         ctx.beginPath();
