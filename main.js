@@ -175,7 +175,7 @@
 
     if (playBtn) {
       playBtn.addEventListener('click', start);
-      playBtn.addEventListener('touchStart', (e) => { e.preventDefault(); start(); }. { passive:false });
+      playBtn.addEventListener('touchStart', (e) => { e.preventDefault(); start(); }, { passive:false });
     }
 
     if (muteBtn) {
