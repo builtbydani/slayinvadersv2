@@ -18,16 +18,8 @@
         maxKillsPerWave: 8,
         lineTolerance: 10
       },
-
-      freeze: {
-        duration: 5.0,
-        slowMult: 0.4
-      },
-
-      glitter: {
-        duration: 6.0,
-        fireRateMult: 0.85
-      }
+      freeze: { duration: 5.0, slowMult: 0.4 },
+      glitter: { duration: 6.0, fireRateMult: 0.85 }
     };
 
     //---------- Canvas -----------
@@ -51,19 +43,19 @@
     //--------- HUD ---------------
     const $ = (id)=>document.getElementById(id);
 
-    const elScore      = ${'score'};
-    const elLives      = ${'lives'};
-    const elLevel      = ${'level'};
-    const elStatus     = {'status'};
-    const elCharge     = ${'charge'};
-    const elChargeFill = ${'chargeFill'};
-    const waveBtn      = {'waveBtn'};
-    const splash       = ${'splash'};
-    const playBtn      = ${'playBtn'};
-    const fireBtn      = ${'fireBtn'};
-    const leftBtn      = #{'leftBtn'};
-    const rightBtn     = ${'rightBtn'};
-    const muteBtn      = ${'muteBtn'};
+    const elScore      = $('score');
+    const elLives      = $('lives');
+    const elLevel      = $('level');
+    const elStatus     = $('status');
+    const elCharge     = $('charge');
+    const elChargeFill = $('chargeFill');
+    const waveBtn      = $('waveBtn');
+    const splash       = $('splash');
+    const playBtn      = $('playBtn');
+    const fireBtn      = $('fireBtn');
+    const leftBtn      = $('leftBtn');
+    const rightBtn     = $('rightBtn');
+    const muteBtn      = $('muteBtn');
 
     //-------- Global State -------
     const state = {
@@ -98,11 +90,7 @@
       dir:     1,
       stepY:  26,
       speed:  38,
-      bounds: {
-        left: 0, 
-        right: 0, 
-        lowest: 0
-      },
+      bounds: { left: 0, right: 0, lowest: 0 },
     };
 
     const shots = []; // player bullets
@@ -123,13 +111,13 @@
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           invaders.list.push({
-            x: startX,
-            y: startY,
+            x: startX + c * (40 + gapX),
+            y: startY + r * (28 + gapY),
             w: 36,
             h: 24,
             hp: 1,
-            hue:(r * 60 + c * 8) % 360,
-            worth: 10 + (rows-r) * 5;
+            hue: (r * 60 + c * 8) % 360,
+            worth: 10 + (rows - r) * 5,
           });
         }
       }
@@ -141,18 +129,11 @@
 
     function calcBounds() {
       if (invaders.list.length === 0) {
-        invaders.bounds = {
-          left: 0,
-          right: 0,
-          lowest: 0
-        };
-
+        invaders.bounds = { left: 0, right: 0, lowest: 0 };
         return;
       }
-
       const xs = invaders.list.map(e => e.x);
       const ys = invaders.list.map(e => e.y);
-
       invaders.bounds.left   = Math.min(...xs);
       invaders.bounds.right  = Math.max(...xs) + 36;
       invaders.bounds.lowest = Math.max(...ys) + 24;
@@ -164,9 +145,8 @@
       if (['ArrowLeft', 'ArrowRight', 'A', 'a', 'D', 'd', ' ', 'Shift'].includes(e.key)) {
         e.preventDefault();
       }
-
       keys.add(e.key);
-      if (e.key === 'esc' || e.key === 'P' || e.key === 'p') togglePause();
+      if (e.key === 'Escape' || e.key === 'P' || e.key === 'p') togglePause();
       if (e.key === 'Shift') tryWave();
     });
     window.addEventListener('keyup', e => keys.delete(e.key));
@@ -176,43 +156,42 @@
       const down = (e) => { e.preventDefault(); on(); };
       const up   = (e) => { e.preventDefault(); off(); };
 
-      el.addEventListener('touchStart', down, { passive:false });
+      el.addEventListener('touchstart', down, { passive:false });
       window.addEventListener('touchend', up, { passive:false });
 
-      el.addEventListener('mouseDown', down);
+      el.addEventListener('mousedown', down);
       window.addEventListener('mouseup', up);
     };
     
-    let leftHeld, rightHeld, fireHeld = false;
-    hold(leftBtn,  () => leftHeld = true,  () => leftHeld = false);
+    let leftHeld=false, rightHeld=false, fireHeld=false;
+    hold(leftBtn,  () => leftHeld  = true, () => leftHeld  = false);
     hold(rightBtn, () => rightHeld = true, () => rightHeld = false);
-    hold(fireBtn,  () => fireHeld = true,  () => fireHeld = false);
+    hold(fireBtn,  () => fireHeld  = true, () => fireHeld  = false);
 
     if (waveBtn) {
-      waveBtn.addEventListener('click' e => { e.preventDefault(); tryWave(); });
-      waveBtn.addEventistener('touchstart', e => { 
-        e.preventDefault(); tryWave(); }, { passive:false });
+      waveBtn.addEventListener('click', e => { e.preventDefault(); tryWave(); });
+      waveBtn.addEventListener('touchstart', e => { e.preventDefault(); tryWave(); }, { passive:false });
     }
 
     //-------- Audio -----------
     let ac = null, audioEnabled = false;
-    let bip, boom, bing, chime;
+    let bip, boom, bling, chime;
 
     function ensureAudio() {
       if (ac) return;
       ac = new (window.AudioContext || window.webkitAudioContext)();
-      function tone(freq, dur = 0.7, type = 'square', gain = 0.8) {
+      function tone(freq, dur = 0.07, type = 'square', gain = 0.08) {
         if (!audioEnabled || !ac || ac.state !== 'running') return;
-        const o = ac.createsOscillator();
+        const o = ac.createOscillator();
         const g = ac.createGain();
         o.type = type;
-        o.frequencyValue = freq;
+        o.frequency.value = freq;
         o.connect(g);
         g.connect(ac.destination);
         g.gain.value = gain;
         const t = ac.currentTime;
         o.start();
-        o.step(t + dur);
+        o.stop(t + dur);
         g.gain.setValueAtTime(gain, t);
         g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
       }
@@ -227,14 +206,10 @@
       audioEnabled = !!on;
       if (audioEnabled) {
         ac.resume();
-        if (muteBtn) {
-          muteBtn.textContent='Sound: On';
-        }
+        if (muteBtn) muteBtn.textContent='Sound: On';
       } else {
         ac.suspend();
-        if (muteBtn) {
-          muteBtn.textContent='Sound: Off';
-        }
+        if (muteBtn) muteBtn.textContent='Sound: Off';
       }
     }
 
@@ -246,15 +221,9 @@
         requestAnimationFrame(loop);
         return;
       }
-
       const dt = Math.min(0.033, (ms - last) / 1000);
       last = ms;
-
-      if (!state.paused) {
-        update(dt);
-        draw();
-      }
-
+      if (!state.paused) { update(dt); draw(); }
       requestAnimationFrame(loop);
     }
 
@@ -264,9 +233,9 @@
       if (splash) {
         splash.style.display = state.paused ? 'flex' : 'none';
         splash.querySelector('.card h1').textContent = state.paused ? 'Paused' : 'SlayInvaders✨';
-        splash.querySelector('.card p').textContent = state.paused ? 
-          'Press P or tap Play to resume.' : 
-          'A cute pastel take on the classic. Clear the alien grid, catch powerups, get multikills.           Dont get bonked!';
+        splash.querySelector('.card p').textContent = state.paused
+          ? 'Press P or tap Play to resume.'
+          : 'A cute pastel take on the classic. Clear the alien grid, catch powerups, get multikills. Don’t get bonked!';
       }
     }
 
@@ -278,71 +247,34 @@
       if (comboCount >= 2) addShake(6 + Math.min(12, comboCount * 2));
       if (source === 'normal') addCharge(balance.wave.chargePerKill);
     }
-    function addShake(a) {
-      state.shakeA = Math.max(state.shakeA, a);
-      state.shakeT = 0.25;
-    }
+    function addShake(a) { state.shakeA = Math.max(state.shakeA, a); state.shakeT = 0.25; }
 
     //---------- Update -----------
     function update(dt) {
       state.t += dt;
-      if (state.shakeT > 0) {
-        state.shakeT -= dt;
-        state.shakeA *= 0.9;
-        if (state.shakeT <= 0) {
-          state.shakeA = 0;
-        }
-      }
 
-      if (comboTimer > 0) {
-        comboTimer -= dt;
-        if (comboTimer <= 0) {
-          comboCount = 0;
-        }
-      }
-
-      if (state.waveCooldown > 0) {
-        state.waveCooldown -= dt;
-      }
+      if (state.shakeT > 0) { state.shakeT -= dt; state.shakeA *= 0.9; if (state.shakeT <= 0) state.shakeA = 0; }
+      if (comboTimer > 0)   { comboTimer -= dt; if (comboTimer <= 0) comboCount = 0; }
+      if (state.waveCooldown > 0) state.waveCooldown -= dt;
 
       // Player movement
       const left  = keys.has('ArrowLeft')  || keys.has('a') || keys.has('A') || leftHeld;
-      const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D') || rightheld;
-      let v = 0;
-      if (left) v-=1;
-      if (right) v+=1;
+      const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D') || rightHeld;
+      let v = 0; if (left) v -= 1; if (right) v += 1;
       player.x += v * player.speed * dt;
       player.x = clamp(player.x, 40, W - 40);
 
       // Glitter timer
-      if (player.glitter) {
-        player.glitterTimer -= dt;
-        if (player.glitterTimer <= 0) {
-          setGlitter(false);
-        }
-      }
+      if (player.glitter) { player.glitterTimer -= dt; if (player.glitterTimer <= 0) setGlitter(false); }
 
       // Freeze timer
-      if (state.freezeTimer > 0) {
-        state.freezeTimer -= dt;
-        if (state.freezeTimer <= 0) {
-          setFreeze(false);
-        }
-      }
+      if (state.freezeTimer > 0) { state.freezeTimer -= dt; if (state.freezeTimer <= 0) setFreeze(false); }
 
       // Fire
-      const.fireKey = keys.has(' ') || fireHeld;
+      const fireKey = keys.has(' ') || fireHeld;
       player.cd -= dt;
       if (fireKey && player.cd <= 0) {
-        const s = {
-          x: player.x,
-          y: player.y - 16,
-          vy: -640,
-          r: 3,
-          pierce: player.glitter,
-          trail: []
-        };
-
+        const s = { x: player.x, y: player.y - 16, vy: -640, r: 3, pierce: player.glitter, trail: [] };
         shots.push(s);
         player.cd = player.fireRate * (player.glitter ? balance.glitter.fireRateMult : 1);
         if (audioEnabled) bip();
@@ -353,21 +285,15 @@
         const s = shots[i];
         s.y += s.vy * dt;
         if (s.pierce) {
-          if (s.trail.length === 0 || 
-            Math.hypot(s.x - (s.trail.at(-1) ?.x || 0), s.y - (s.trail.at(-1) ?.y || 0)) > 6) {
-            s.trail.push({x: s.x, y: s.y t: 1});
-            if (s.trail.length > 16) {
-              s.trail.shift();
-            }
-            for (const t of s.trail) {
-              t.t -= 0.04;
-            }
-            while (s.trail.length && s.trail[0].t <= 0) {
-              s.trail.shift();
-            }
+          const lastPoint = s.trail.at(-1);
+          if (s.trail.length === 0 || Math.hypot(s.x - (lastPoint?.x || 0), s.y - (lastPoint?.y || 0)) > 6) {
+            s.trail.push({ x: s.x, y: s.y, t: 1 });
+            if (s.trail.length > 16) s.trail.shift();
           }
+          for (const t of s.trail) t.t -= 0.04;
+          while (s.trail.length && s.trail[0].t <= 0) s.trail.shift();
         }
-        if (s.y <- 20) shots.splice(i, 1);
+        if (s.y < -20) shots.splice(i, 1);
       }
 
       // Invader movement (predictive edge, freeze aware)
@@ -379,19 +305,14 @@
         const nextRight = invaders.bounds.right + dx;
 
         if (nextLeft < 20 || nextRight > W - 20) {
-          invaders.dir *+ -1;
-          for (const e of invaders.list) {
-            e.y += invaders.stepY;
-          }
+          invaders.dir *= -1;
+          for (const e of invaders.list) e.y += invaders.stepY;
           calcBounds();
         } else {
-          for (const e of invaders.list) {
-            e.x += dx;
-          }
+          for (const e of invaders.list) e.x += dx;
           invaders.bounds.left += dx;
           invaders.bounds.right += dx;
         }
-
         if (invaders.bounds.lowest >= player.y - 18) loseLife();
       }
 
@@ -409,22 +330,8 @@
               addScore(e.worth);
               onKill('normal');
               const r = Math.random();
-              if (r < 0.10) {
-                drops.push({
-                  x: e.x + 18,
-                  y: e.y + 12,
-                  vy: 80,
-                  type: 'freeze'
-                });
-                else if (r < 0.25) {
-                  drops.push({
-                    x: e.x + 18,
-                    y: e.y + 12,
-                    vy: 80,
-                    type: 'glitter'
-                  });
-                }  
-              }
+              if (r < 0.10) drops.push({ x: e.x + 18, y: e.y + 12, vy: 80, type: 'freeze' });
+              else if (r < 0.25) drops.push({ x: e.x + 18, y: e.y + 12, vy: 80, type: 'glitter' });
             }
             if (!s.pierce) shots.splice(i, 1);
             break;
@@ -433,7 +340,7 @@
       }
 
       // Powerup drops
-      for (let i = drops.length - 1; i > 0; i--) {
+      for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i];
         d.y += d.vy * dt;
         d.vy = Math.min(d.vy + 160 * dt, 260);
@@ -448,7 +355,7 @@
       }
 
       // Rainbow waves
-      for (let i = waves.length - 1; i > 0; i--) {
+      for (let i = waves.length - 1; i >= 0; i--) {
         const wv = waves[i];
         wv.y += wv.vy * dt;
         for (let j = invaders.list.length - 1; j >= 0; j--) {
@@ -456,17 +363,13 @@
           if (Math.abs((e.y + 12) - wv.y) < balance.wave.lineTolerance) {
             spawnPuff(e.x + 18, e.y + 12, e.hue);
             addScore(e.worth);
-            onKill('wave');
+            onKill('wave'); // no charge from wave kills
             invaders.list.splice(j, 1);
             wv.kills = (wv.kills || 0) + 1;
-            if (wv.kills >= balance.wave.maxKillsPerWave) {
-              break;
-            }
+            if (wv.kills >= balance.wave.maxKillsPerWave) break;
           }
         }
-        if (wv.y < -20 || (wv.kills || 0) >= balance.wave.maxKillsPerWave) {
-          waves.splice(i, 1);
-        }
+        if (wv.y < -20 || (wv.kills || 0) >= balance.wave.maxKillsPerWave) waves.splice(i, 1);
       }
 
       // Particles
@@ -475,24 +378,22 @@
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.vy += 20 * dt;
-        p.a = p.fade * dt;
-        if (p.a <= 0) {
-          pfx.splice(i, 1);
-        }
+        p.a -= p.fade * dt;
+        if (p.a <= 0) pfx.splice(i, 1);
       }
 
       // Next level
       if (invaders.list.length === 0) {
         state.level++;
-        elLevel.textContent = 'LV' + state.level;
+        elLevel.textContent = 'LV ' + state.level;
         state.speedScale = 1;
         spawnWave(state.level);
       }
 
-      // Dynamic difficulty: speed up as lowest row drops
+      // Dynamic difficulty
       const baseline = 130 + state.level * 6;
       const low = invaders.bounds.lowest || baseline;
-      state.speedScale = lerp(state.speedScale, 1 + clamp((low-baseline) / 320, 0, 1.2), 0.02);
+      state.speedScale = lerp(state.speedScale, 1 + clamp((low - baseline) / 320, 0, 1.2), 0.02);
     }
 
     //--------- Effects of States ----------
@@ -500,11 +401,11 @@
       player.glitter = on;
       player.glitterTimer = on ? balance.glitter.duration : 0;
       elStatus.textContent = on ? 'GLITTER ✨' : (state.freezeTimer > 0 ? 'FREEZE ❄️' : '');
-      elStatus.style.background = on ? 
-        'linear-gradient(90deg, #ffb3d6, #c9b7ff, #aee6ff)' : 
-        (state.freezeTimer > 0 ? 
-        'linear-gradient(90deg, #88c6ff, #c9e6ff)' :
-        'rgba(255, 255, 255, 0.08)');
+      elStatus.style.background = on
+        ? 'linear-gradient(90deg, #ffb3d6, #c9b7ff, #aee6ff)'
+        : (state.freezeTimer > 0
+            ? 'linear-gradient(90deg, #88c6ff, #c9e6ff)'
+            : 'rgba(255, 255, 255, 0.08)');
       if (on && audioEnabled) bling();
     }
 
@@ -516,47 +417,36 @@
         if (audioEnabled) chime();
       } else if (!player.glitter) {
         elStatus.textContent = '';
-        elStatus.style.background = 'rgba(255, 255, 255, 0.08)'
+        elStatus.style.background = 'rgba(255, 255, 255, 0.08)';
       }
     }
 
     function addCharge(amount) {
       player.waveCharge = clamp(player.waveCharge + amount, 0, 1);
       const pct = Math.round(player.waveCharge * 100);
-      if (elCharge && elCharge.firstChild) { 
-        elCharge.firstChild.nodeValue = `WAVE ${pct}%`; 
-      }
-      if (elChargeFill) {
-        elChargeFill.style.width = `${pct}%`;
-      } 
+      if (elCharge && elCharge.firstChild) elCharge.firstChild.nodeValue = `WAVE ${pct}%`;
+      if (elChargeFill) elChargeFill.style.width = `${pct}%`;
     }
 
     function tryWave() {
       if (player.waveCharge < 1 || state.waveCooldown > 0) return;
-      waves.push({ 
-        y: player.y - 22,
-        vy: -900,
-        kills: 0,
-      });
+      waves.push({ y: player.y - 22, vy: -900, kills: 0 });
       addShake(10);
       if (audioEnabled) bling();
       player.waveCharge = 0;
       addCharge(0);
-      state.waveCooldown = balance.waveCooldown;
+      state.waveCooldown = balance.wave.cooldown;
     }
 
     function addScore(n) {
       state.score += n;
-      elScore.textContent = 'SCORE' + String(state.score).padStart(6, '0');
+      elScore.textContent = 'SCORE ' + String(state.score).padStart(6, '0');
     }
 
     function loseLife() {
       state.lives--;
       renderLives();
-      if (state.lives <= 0) {
-        gameOver();
-        return;
-      }
+      if (state.lives <= 0) { gameOver(); return; }
 
       player.x = W / 2;
       player.cd = 0;
@@ -564,32 +454,24 @@
       invaders.stepY = 26;
       setGlitter(false);
       setFreeze(false);
-      plaer.waveCharge = 0;
+      player.waveCharge = 0;
       addCharge(0);
     }
 
-    function renderLives() {
-      elLives.textContent = '❤'.repeat(state.lives);
-    }
+    function renderLives() { elLives.textContent = '❤'.repeat(state.lives); }
 
     function gameOver() {
       state.running = false;
       if (splash) {
-        spalsh.style.display = 'flex';
+        splash.style.display = 'flex';
         splash.querySelector('h1').textContent = 'Game Over';
-        splash.querySelector('p').textContent = `Final score: ${state.score}. Press Play to retry`
+        splash.querySelector('p').textContent = `Final score: ${state.score}. Press Play to retry`;
       }
     }
 
     function spawnPuff(x, y, hue) {
       for (let i = 0; i < 8; i++) {
-        pfx.push({
-          x, y, vx: rand(-60, 60),
-          vy: rand(-120, -10), 
-          a: 1,
-          fade: rand(1.2, 1.8),
-          h: hue
-        });
+        pfx.push({ x, y, vx: rand(-60, 60), vy: rand(-120, -10), a: 1, fade: rand(1.2, 1.8), h: hue });
       }
     }
 
@@ -629,7 +511,7 @@
       for (const e of invaders.list) drawAlien(e);
 
       // drops
-      for (const d of drops) drawDrops(d);
+      for (const d of drops) drawDrop(d);
 
       // waves
       for (const wv of waves) drawWave(wv);
@@ -715,11 +597,11 @@
     function drawWave(wv) {
       const y = wv.y;
       const grad = ctx.createLinearGradient(0, y, W, y);
-      grad.addColorStop(0, 'hsla(320, 90%, 70%, 0.0)');
-      grad.addColorStop(0.25, 'hsla(300, 90%, 70%, 0.0)');
-      grad.addColorStop(0.5, 'hsla(260, 90%, 70%, 0.0)');
-      grad.addColorStop(0.75, 'hsla(200, 90%, 70%, 0.0)');
-      grad.addColorStop(1, 'hsla(180, 90%, 70%, 0.0)');
+      grad.addColorStop(0,    'hsla(320, 90%, 70%, 0.0)');
+      grad.addColorStop(0.25, 'hsla(300, 90%, 70%, 0.9)');
+      grad.addColorStop(0.5,  'hsla(260, 90%, 70%, 1.0)');
+      grad.addColorStop(0.75, 'hsla(200, 90%, 70%, 0.9)');
+      grad.addColorStop(1,    'hsla(180, 90%, 70%, 0.0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, y-3, W, 6);
     }
@@ -740,15 +622,19 @@
 
     function start() {
       state.running = true;
-      state.paused = false;
-      state.score = 0;
-      state.lives = 3;
-      state.level = 1;
+      state.paused  = false;
+      state.score   = 0;
+      state.lives   = 3;
+      state.level   = 1;
       renderLives();
       elScore.textContent = 'SCORE 000000';
       elLevel.textContent = 'LV 1';
-      elStatue.textContent = '';
-      player.waveCooldown = 0;
+      elStatus.textContent = '';
+      player.waveCharge = 0;
+      addCharge(0);
+      setFreeze(false);
+      setGlitter(false);
+      state.waveCooldown = 0;
       spawnWave(1);
       if (splash) splash.style.display = 'none';
       requestAnimationFrame(loop);
