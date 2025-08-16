@@ -648,6 +648,117 @@
       ctx.restore();
     }
 
-    // TODO Draw helpers, bootstrap
+    function drawBackdrop() {
+      const g = ctx.createRadialGradient(W / 2, H * 0.2, 60, W / 2, H * 0.2, H * 0.9);
+      g.addColorStop(0, 'rgba(255, 255, 255, 0.03)');
+      g.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 0.35;
+      for (let i = 0; i < 60; i++) {
+        ctx.fillStyle = i % 2 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(200, 200, 255, 0.5)';
+        ctx.fillRect((i * 97 + (state.t * 40 * i) % W) % W, (i * 53) % H, 2, 2);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawShip(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = '#ffffff';
+      roundRect(-28, -10, 56, 20, 8);
+      ctx.fill();
+      ctx.fillStyle = '#c9b7ff';
+      ctx.fillRect(-8, -14, 16, 8);
+      ctx.restore();
+    }
+
+    function drawAlien(e) {
+      const t = state.t * 4;
+      const bob = Math.sin((e.x + e.y) * 0.02 + t) * 1.5;
+      ctx.save();
+      ctx.translate(e.x + 18, e.y + 12 + bob);
+      ctx.fillStyle = `hsl(${e.hue} 90% 70%)`;
+      roundRect(-18, -12, 36, 24, 6);
+      ctx.fill();
+      ctx.fillStyle = '#1b1830';
+      ctx.fillRect(-8, -2, 6, 6);
+      ctx.fillRect(2, -2, 6, 6);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fillRect(6, -6, 4, 4);
+      ctx.restore();
+    }
+
+    function drawDrop(d) {
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      if (d.type === 'glitter') {
+        ctx.fillStyle = '#ffffff';
+        roundRect(-10, -8, 20, 16, 6);
+        ctx.fill();
+        ctx.fillStyle = '#c9b7ff';
+        ctx.fillRect(-4, -12, 8, 6);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fillRect(5, -10, 3, 3);
+      } else if (d.type === 'freeze') {
+        ctx.fillStyle = '#e8f3ff';
+        roundRect(-10, -8, 20, 16, 6);
+        ctx.fill();
+        ctx.fillStyle = '#88c6ff';
+        ctx.fillRect(-4, -12, 8, 6);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(5, -10, 3, 3);
+      }
+      ctx.restore();
+    }
+
+    function drawWave(wv) {
+      const y = wv.y;
+      const grad = ctx.createLinearGradient(0, y, W, y);
+      grad.addColorStop(0, 'hsla(320, 90%, 70%, 0.0)');
+      grad.addColorStop(0.25, 'hsla(300, 90%, 70%, 0.0)');
+      grad.addColorStop(0.5, 'hsla(260, 90%, 70%, 0.0)');
+      grad.addColorStop(0.75, 'hsla(200, 90%, 70%, 0.0)');
+      grad.addColorStop(1, 'hsla(180, 90%, 70%, 0.0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, y-3, W, 6);
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    //------ Bootstrap ---------
+    if (playBtn) playBtn.addEventListener('click', start);
+    if (muteBtn) muteBtn.addEventListener('click', () => setAudio(!audioEnabled));
+
+    function start() {
+      state.running = true;
+      state.paused = false;
+      state.score = 0;
+      state.lives = 3;
+      state.level = 1;
+      renderLives();
+      elScore.textContent = 'SCORE 000000';
+      elLevel.textContent = 'LV 1';
+      elStatue.textContent = '';
+      player.waveCooldown = 0;
+      spawnWave(1);
+      if (splash) splash.style.display = 'none';
+      requestAnimationFrame(loop);
+    }
+
+    // expose helpers for debug
+    window.SlayInvaders = {
+      setAudio, setFreeze, setGlitter,
+      addCharge:(x)=>addCharge(x), tryWave,
+      state, player
+    };
   }
-})
+})();
