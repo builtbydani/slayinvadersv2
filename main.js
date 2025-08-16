@@ -173,6 +173,16 @@
       waveBtn.addEventListener('touchstart', e => { e.preventDefault(); tryWave(); }, { passive:false });
     }
 
+    if (playBtn) {
+      playBtn.addEventListener('click', start);
+      playBtn.addEventListener('touchStart', (e) => { e.preventDefault(); start(); }. { passive:false });
+    }
+
+    if (muteBtn) {
+      muteBtn.addEventListener('click', start);
+      muteBtn.addEventListener('touchStart', (e) => { e.preventDefault(); setAudio(!audioEnabled); }, { passive:false });
+    }
+
     //-------- Audio -----------
     let ac = null, audioEnabled = false;
     let bip, boom, bling, chime;

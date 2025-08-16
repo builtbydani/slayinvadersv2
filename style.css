@@ -95,6 +95,7 @@ canvas {
   justify-content:center;
   background:linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(14, 13, 19, 0.85));
   backdrop-filter:blur(4px);
+  z-index: 4;
 }
 .card{
   width:min(560px, 92vw);
@@ -148,6 +149,7 @@ canvas {
   justify-content:center;
   gap:10px;
   pointer-events:auto;
+  z-index: 5;
 }
 .tbtn{
   touch-action:manipulation;
