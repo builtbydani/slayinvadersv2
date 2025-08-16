@@ -1,1 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>SlayInvaders</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
+  <body>
+    <div id="wrap">
+      <canvas 
+        id="game" 
+        width="720" 
+        height="960" 
+        aria-label="SlayInvaders canvas" 
+        role="img">
+      </canvas>
+
+      <div class="hud" aria-hidden="true">
+        <div class="badge" id="score">SCORE 000000</div>
+        <div class="badge" id="lives">❤❤❤</div>
+        <div class="badge" id="level">LV 1</div>
+        <div class="badge" id="status"></div>
+        <div class="badge" id="charge">WAVE 0%
+          <div class="bar">
+            <div class="fill" id="chargeFill">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="splash">
+        <div class="card">
+          <h1>SlayInvaders ✨</h1>
+          <p> A cute pastel take on the classic.
+              <br />
+              Zap the aliens, grab powerups, and go for a high score!
+              <br />
+              Careful not to get bonked... 
+          </p>
+          <div class="row">
+            <button class="btn pastel" id="playBtn">Play</button>
+            <button class="btn ghost" id="muteBtn">Sound: Off</button>
+          </div>
+          <p class="small">
+            Includes: <b>Glitter Shot</b> (piercing), <b>Time Freeze</b>, and more!
+          </p>
+        </div>
+      </div>
+
+      <div class="touch" id="touchCtl">
+        <button class="tbtn" id="leftBtn">◀︎</button>
+        <button class="tbtn" id="waveBtn">WAVE</button>
+        <button class="tbtn" id="fireBtn">FIRE</button>
+        <button class="tbtn" id="rightBtn">▶︎</button>
+      </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
